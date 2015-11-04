@@ -46,7 +46,6 @@ def countPlayers():
     cursor.execute(query)
     count = cursor.fetchone()[0]
 
-    db.commit()
     db.close()
 
     return count
