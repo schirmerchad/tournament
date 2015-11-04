@@ -6,38 +6,50 @@
 import psycopg2
 
 
-def connect():
+def connect(database_name="tournament"):
     """Connect to the PostgreSQL database.  Returns a database connection."""
-    return psycopg2.connect("dbname=tournament")
+    try:
+        db = psycopg2.connect("dbname={}".format(database_name))
+        cursor = db.cursor()
+        return db, cursor
+    except:
+        print("Woops. Touble connecting to the database")
 
 
 def deleteMatches():
     """Remove all the match records from the database."""
-    conn = connect()
-    cu = conn.cursor()
-    cu.execute("DELETE FROM matches")
-    conn.commit()
-    conn.close()
+    db, cursor = connect()
+
+    query = "DELETE FROM matches;"
+    cursor.execute(query)
+
+    db.commit()
+    db.close()
 
 
 def deletePlayers():
     """Remove all the player records from the database."""
-    conn = connect()
-    cu = conn.cursor()
-    cu.execute("DELETE FROM players")
-    conn.commit()
-    conn.close()
+    db, cursor = connect()
+
+    query = "DELETE FROM players;"
+    cursor.execute(query)
+
+    db.commit()
+    db.close()
 
 
 def countPlayers():
     """Returns the number of players currently registered."""
-    conn = connect()
-    cu = conn.cursor()
-    cu.execute("SELECT COUNT(*) FROM players")
-    count = cu.fetchall()
-    conn.commit()
-    conn.close()
-    return count[0][0]
+    db, cursor = connect()
+
+    query = "SELECT COUNT(*) FROM players;"
+    cursor.execute(query)
+    count = cursor.fetchone()[0]
+
+    db.commit()
+    db.close()
+
+    return count
 
 
 def registerPlayer(name):
@@ -49,11 +61,14 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
-    conn = connect()
-    cu = conn.cursor()
-    cu.execute("INSERT INTO players (id, name) VALUES (default, %s)", (name,))
-    conn.commit()
-    conn.close()
+    db, cursor = connect()
+
+    query = "INSERT INTO players (id, name) VALUES (default, %s);"
+    parameter = (name,)
+    cursor.execute(query, parameter)
+
+    db.commit()
+    db.close()
 
 
 def playerStandings():
@@ -69,13 +84,15 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
+    db, cursor = connect()
 
-    conn = connect()
-    cu = conn.cursor()
-    cu.execute("SELECT * from standings")
-    result = cu.fetchall()
-    conn.commit()
-    conn.close()
+    query = "SELECT * from standings;"
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    db.commit()
+    db.close()
+
     return result
 
 
@@ -86,12 +103,14 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
+    db, cursor = connect()
 
-    conn = connect()
-    cu = conn.cursor()
-    cu.execute("INSERT INTO matches (match_id, winner, loser) VALUES (default, %s, %s)", (winner, loser))
-    conn.commit()
-    conn.close()
+    query = "INSERT INTO matches (match_id, winner, loser) VALUES (default, %s, %s);"
+    parameters = (winner, loser)
+    cursor.execute(query,parameters)
+
+    db.commit()
+    db.close()
  
  
 def swissPairings():
@@ -112,21 +131,26 @@ def swissPairings():
 
     nextMatch = []
 
-    conn = connect()
-    cu = conn.cursor()
-    cu.execute("SELECT * FROM standings")
-    result = cu.fetchall()
-    conn.close()
+    db, cursor = connect()
 
-    for i in range(0, len(result), 2):
-        p1 = result[i]
-        p2 = result[i + 1]
-        match = (p1[0], p1[1], p2[0], p2[1])
-        nextMatch.append(match)
+    query = "SELECT * FROM standings;"
+    cursor.execute(query)
+    result = cursor.fetchall()
 
-    return nextMatch
+    query = "SELECT COUNT(*) FROM standings;"
+    cursor.execute(query)
+    numPlayers = cursor.fetchone()[0]
+
+    db.commit()
+    db.close()
+
+    if (numPlayers % 2 == 0): 
+        for i in range(0, len(result), 2):
+            p1 = result[i]
+            p2 = result[i + 1]
+            match = (p1[0], p1[1], p2[0], p2[1])
+            nextMatch.append(match)
+        return nextMatch
         
-
-
-
-
+    else:
+        return "You must have an even number of players!"
