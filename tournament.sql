@@ -19,10 +19,14 @@ CREATE TABLE matches
   loser INT REFERENCES players(id) ON DELETE CASCADE,
   CHECK (winner <> loser));
 
-CREATE VIEW winCount 
-AS SELECT id, name, COUNT(winner) AS wins 
-FROM players LEFT JOIN matches 
-ON players.id = matches.winner GROUP BY id;
+CREATE VIEW winCount AS
+  SELECT id,
+         name,
+         COUNT(winner) AS wins 
+  FROM players
+  LEFT JOIN matches 
+    ON players.id = matches.winner
+  GROUP BY id;
 
 CREATE VIEW lossCount AS
   SELECT id,
@@ -31,7 +35,7 @@ CREATE VIEW lossCount AS
   FROM players
   LEFT JOIN matches 
     ON players.id = matches.loser
-    GROUP BY id;
+  GROUP BY id;
 
 CREATE VIEW standings AS
   SELECT winCount.id,
